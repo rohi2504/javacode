@@ -1,0 +1,61 @@
+import org.json.JSONObject;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+
+public class SecretSharing {
+    public static void main(String[] args) {
+        try {
+            String content = new String(Files.readAllBytes(Paths.get("input.json")));
+            JSONObject jsonObject = new JSONObject(content);
+            
+            
+            JSONObject keys = jsonObject.getJSONObject("keys");
+            int n = keys.getInt("n");
+            int k = keys.getInt("k");
+
+           
+            List<Integer> xValues = new ArrayList<>();
+            List<Long> yValues = new ArrayList<>();
+
+            for (String key : jsonObject.keySet()) {
+                if (key.equals("keys")) continue; // Skip the keys object
+                int x = Integer.parseInt(key); // The key itself is x
+                JSONObject rootData = jsonObject.getJSONObject(key);
+                int base = rootData.getInt("base");
+                String value = rootData.getString("value");
+                long y = baseToDecimal(value, base); 
+                xValues.add(x);
+                yValues.add(y);
+            }
+
+
+            long constantTerm = lagrangeInterpolation(xValues, yValues);
+            System.out.println("The constant term (secret c) is: " + constantTerm);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static long baseToDecimal(String value, int base) {
+        return Long.parseLong(value, base);
+    }
+
+    private static long lagrangeInterpolation(List<Integer> xValues, List<Long> yValues) {
+        int n = xValues.size();
+        long c = 0;
+        for (int i = 0; i < n; i++) {
+            long term = yValues.get(i); // Start with y_i
+            for (int j = 0; j < n; j++) {
+                if (i != j) {
+                    term *= (0 - xValues.get(j)); 
+                    term /= (xValues.get(i) - xValues.get(j));                 }
+            }
+            c += term; 
+        }
+
+        return c;
+    }
+}
